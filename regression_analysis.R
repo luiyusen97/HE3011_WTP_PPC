@@ -86,7 +86,7 @@ field_survey$monthlyincome <- factor(
                                            "8000-8999", "9000-9999", ">10000")
     )
 field_survey$traveltime <- factor(field_survey$traveltime,
-                                  levels = c("0-30", "30-60", "60-90", "90-120", "More than 2 hours")
+                                  levels = c("0-30", "30-60", "60-90", "90-120", "More than 2 hours"),
                                   labels = c("0-30", "30-60", "60-90", "90-120", ">20")
 )
 field_survey$nationality <- factor(field_survey$nationality,
@@ -115,10 +115,10 @@ summary(hetero_test)
 # test for heteroscedascity for local data
 hetero_test2 <- filter(field_survey, field_survey$nationality == "Singaporean" |
                            field_survey$nationality == "Singapore Permanent Resident")
-hetero_test2 <- mutate(hetero_test2, residual_squared = regression_report$residuals**2)
-hetero_test <- lm(residual_squared ~ monthlyincome + visitationrate + traveltime + age, hetero_test2)
-summary(hetero_test)
-# 0.9745 > 0.05, don't reject null hypothesis of homoscedascity
+hetero_test2 <- mutate(hetero_test2, residual_squared = regression_report_locals$residuals**2)
+hetero_test2 <- lm(residual_squared ~ monthlyincome + visitationrate + traveltime + age, hetero_test2)
+summary(hetero_test2)
+# 0.9786 > 0.05, don't reject null hypothesis of homoscedascity
 
 # dont run this, you cant ln0. I'm still trying to think of a solution
 # field_survey_loglevel <- mutate(field_survey, max_wtp = ln(max_wtp))
