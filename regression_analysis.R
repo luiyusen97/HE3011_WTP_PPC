@@ -2,6 +2,7 @@ library(tidyverse)
 
 field_data_filepath <- "C:\\Users\\Lui Yu Sen\\Documents\\Github projects\\HE3011_WTP_PPC\\Data\\field_survey_data.csv"
 field_survey <- read.csv(field_data_filepath)
+online_survey <- read.csv("C:\\Users\\Lui Yu Sen\\Documents\\Github projects\\HE3011_WTP_PPC\\Data\\online_survey_data.csv")
 
 # removed people who don't give income and protest bid, one that government should pay.Didn't remove the respondent who said business should pay
 # because he was not willing to pay for conservation in the first place
@@ -12,6 +13,17 @@ colnames(field_survey)[seq(2, 12)] <- c("nationality", "age", "conservation",
                                         "paymentcard_tax", "max_wtp", "zero_wtp", 
                                         "ethnicity", "monthlyincome", "visitationrate", 
                                         "traveltime", "propertyownership")
+
+colnames(online_survey)[seq(2, 12)] <- c("nationality", "age", "conservation", 
+                                        "paymentcard_tax", "max_wtp", "zero_wtp", 
+                                        "ethnicity", "monthlyincome", "visitationrate", 
+                                        "traveltime", "propertyownership")
+
+# 7 observations that reported 0 wtp, unsure or yes should conserve but said gov should pay. These are classified as protest bids and are removed
+online_survey <- filter(online_survey, max_wtp != 0 & zero_wtp != "The government should pay for it, not me.")
+
+field_survey <- rbind(field_survey, online_survey)
+# rm(online_survey)
 
 field_survey <- mutate(field_survey, visitationrate = str_sub(visitationrate, 1, 3))
 for (n in seq(1:nrow(field_survey))){
@@ -73,12 +85,22 @@ field_survey$monthlyincome <- factor(
                                            "8000-8999", "9000-9999", ">10000")
     )
 field_survey$traveltime <- factor(field_survey$traveltime,
-                                  levels = c("0-30", "30-60", "60-90", "90-120")
+                                  levels = c("0-30", "30-60", "60-90", "90-120", "More than 2 hours")
+                                  labels = c("0-30", "30-60", "60-90", "90-120", ">20")
 )
 field_survey$nationality <- factor(field_survey$nationality,
                                    levels = c("Singaporean", "Singapore Permanent Resident", "Others"))
 
-nationality_levels <- c("Singaporean", "Singapore_PR", "Foreigner")
-age_levels <- c("18-35", "36-50", "51-65", ">65")
+field_survey$age <- factor(field_survey$age,
+                           levels = c("14", "18-35", "36-50", "51-65", "Above 65"),
+                           labels = c("<18", "18-35", "36-50", "51-65", ">65"))
 
-summary(lm(formula = max_wtp ~ monthlyincome + visitationrate + traveltime, field_survey))
+regression_report <- lm(formula = max_wtp ~ monthlyincome + visitationrate + traveltime + age, field_survey)
+summary(regression_report)
+
+# test for heteroscedascity
+hetero_test <- field_survey
+hetero_test <- mutate(hetero_test, residual_squared = regression_report$residuals**2)
+hetero_test <- lm(residual_squared ~ monthlyincome + visitationrate + traveltime + age, hetero_test)
+summary(hetero_test)
+# 0.9745 > 0.05, don't reject null hypothesis of homoscedascity
