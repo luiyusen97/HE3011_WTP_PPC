@@ -121,9 +121,40 @@ summary(hetero_test)
 # 0.9745 > 0.05, don't reject null hypothesis of homoscedascity
 
 # dont run this, you cant ln0. I'm still trying to think of a solution
-field_survey_loglevel <- mutate(field_survey, max_wtp = ln(max_wtp))
-regression_report_loglevel <- lm(formula = max_wtp ~ monthlyincome + visitationrate + traveltime + age, field_survey_loglevel)
-summary(regression_report_loglevel)
-hetero_test_loglevel <- mutate(regression_report_loglevel, residual_squared = regression_report_loglevel$residuals**2)
-hetero_test_loglevel <- lm(residual_squared ~ monthlyincome + visitationrate + traveltime + age, hetero_test_loglevel)
-summary(hetero_test_loglevel)
+# field_survey_loglevel <- mutate(field_survey, max_wtp = ln(max_wtp))
+# regression_report_loglevel <- lm(formula = max_wtp ~ monthlyincome + visitationrate + traveltime + age, field_survey_loglevel)
+# summary(regression_report_loglevel)
+# hetero_test_loglevel <- mutate(regression_report_loglevel, residual_squared = regression_report_loglevel$residuals**2)
+# hetero_test_loglevel <- lm(residual_squared ~ monthlyincome + visitationrate + traveltime + age, hetero_test_loglevel)
+# summary(hetero_test_loglevel)
+
+# calculating TEV
+locals_data <- filter(field_survey, field_survey$nationality == "Singaporean" |
+                          field_survey$nationality == "Singapore Permanent Resident")
+mean_existence <- mean(locals_data[which(locals_data$visitationrate=="existence"),"max_wtp"])
+mean_option <- mean(locals_data[which(locals_data$visitationrate=="option"),"max_wtp"])
+mean_use <- mean(locals_data[which(locals_data$visitationrate=="use"),"max_wtp"])
+mean_wtp <- mean(locals_data$max_wtp)
+existence_proportion <- nrow(locals_data[which(locals_data$visitationrate=="existence"),])/nrow(locals_data)
+option_proportion <- nrow(locals_data[which(locals_data$visitationrate=="option"),])/nrow(locals_data)
+use_proportion <- nrow(locals_data[which(locals_data$visitationrate=="use"),])/nrow(locals_data)
+print(mean_existence)
+print(mean_option)
+print(mean_use)
+print(mean_wtp)
+GDP_2019 <- 102636.5*1000000
+population <- 5685.8*1000
+TEV_existence <- mean_existence*(population*existence_proportion)
+TEV_option <- mean_option*(population*option_proportion)
+TEV_use <- mean_use*(population*use_proportion)
+TEV_total <- TEV_existence + TEV_option + TEV_use
+TEV_existence_GDP <- TEV_existence/GDP_2019
+TEV_option_GDP <- TEV_option/GDP_2019
+TEV_use_GDP <- TEV_use/GDP_2019
+TEV_mean_GDP <- mean_wtp/GDP_2019
+existence <- c(existence_proportion, mean_existence, TEV_existence, TEV_existence_GDP)
+option <- c(option_proportion, mean_option, TEV_option, TEV_option_GDP)
+use <- c(use_proportion, mean_use, TEV_use, TEV_use_GDP)
+total <- c(1, mean_wtp, TEV_total, TEV_mean_GDP)
+TEV <- rbind(existence, option, use, total)
+colnames(TEV) <- c("proportion", "mean", "sum", "percentageGDP2019")
