@@ -1,4 +1,5 @@
 library(tidyverse)
+library(SciViews)
 
 field_data_filepath <- "C:\\Users\\Lui Yu Sen\\Documents\\Github projects\\HE3011_WTP_PPC\\Data\\field_survey_data.csv"
 field_survey <- read.csv(field_data_filepath)
@@ -98,9 +99,31 @@ field_survey$age <- factor(field_survey$age,
 regression_report <- lm(formula = max_wtp ~ monthlyincome + visitationrate + traveltime + age, field_survey)
 summary(regression_report)
 
+regression_report_locals <- lm(formula = max_wtp ~ monthlyincome + visitationrate + traveltime + age,
+                               filter(field_survey, field_survey$nationality == "Singaporean" |
+                                          field_survey$nationality == "Singapore Permanent Resident")
+                               )
+summary(regression_report_locals)
+
 # test for heteroscedascity
 hetero_test <- field_survey
 hetero_test <- mutate(hetero_test, residual_squared = regression_report$residuals**2)
 hetero_test <- lm(residual_squared ~ monthlyincome + visitationrate + traveltime + age, hetero_test)
 summary(hetero_test)
 # 0.9745 > 0.05, don't reject null hypothesis of homoscedascity
+
+# test for heteroscedascity for local data
+hetero_test2 <- filter(field_survey, field_survey$nationality == "Singaporean" |
+                           field_survey$nationality == "Singapore Permanent Resident")
+hetero_test2 <- mutate(hetero_test2, residual_squared = regression_report$residuals**2)
+hetero_test <- lm(residual_squared ~ monthlyincome + visitationrate + traveltime + age, hetero_test2)
+summary(hetero_test)
+# 0.9745 > 0.05, don't reject null hypothesis of homoscedascity
+
+# dont run this, you cant ln0. I'm still trying to think of a solution
+field_survey_loglevel <- mutate(field_survey, max_wtp = ln(max_wtp))
+regression_report_loglevel <- lm(formula = max_wtp ~ monthlyincome + visitationrate + traveltime + age, field_survey_loglevel)
+summary(regression_report_loglevel)
+hetero_test_loglevel <- mutate(regression_report_loglevel, residual_squared = regression_report_loglevel$residuals**2)
+hetero_test_loglevel <- lm(residual_squared ~ monthlyincome + visitationrate + traveltime + age, hetero_test_loglevel)
+summary(hetero_test_loglevel)
