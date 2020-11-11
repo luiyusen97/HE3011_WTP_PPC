@@ -1,5 +1,6 @@
 library(tidyverse)
 library(SciViews)
+library(broom)
 
 field_data_filepath <- "C:\\Users\\Lui Yu Sen\\Documents\\Github projects\\HE3011_WTP_PPC\\Data\\field_survey_data.csv"
 field_survey <- read.csv(field_data_filepath)
@@ -95,6 +96,10 @@ field_survey$nationality <- factor(field_survey$nationality,
 field_survey$age <- factor(field_survey$age,
                            levels = c("14", "18-35", "36-50", "51-65", "Above 65"),
                            labels = c("<18", "18-35", "36-50", "51-65", ">65"))
+# # remove upper bound outliers
+field_survey <- mutate(field_survey, difference = `max_wtp` - as.numeric(paymentcard_tax))
+field_survey <- filter(field_survey, difference < 50)
+field_survey <- mutate(field_survey, max_wtp = max_wtp*12)
 
 regression_report <- lm(formula = max_wtp ~ monthlyincome + visitationrate + traveltime + age, field_survey)
 summary(regression_report)
@@ -143,7 +148,7 @@ print(mean_option)
 print(mean_use)
 print(mean_wtp)
 GDP_2019 <- 102636.5*1000000
-population <- 5685.8*1000
+population <- (3523.2+521)*1000
 TEV_existence <- mean_existence*(population*existence_proportion)
 TEV_option <- mean_option*(population*option_proportion)
 TEV_use <- mean_use*(population*use_proportion)
@@ -151,10 +156,22 @@ TEV_total <- TEV_existence + TEV_option + TEV_use
 TEV_existence_GDP <- TEV_existence/GDP_2019
 TEV_option_GDP <- TEV_option/GDP_2019
 TEV_use_GDP <- TEV_use/GDP_2019
-TEV_mean_GDP <- mean_wtp/GDP_2019
+TEV_mean_GDP <- TEV_total/GDP_2019
 existence <- c(existence_proportion, mean_existence, TEV_existence, TEV_existence_GDP)
 option <- c(option_proportion, mean_option, TEV_option, TEV_option_GDP)
 use <- c(use_proportion, mean_use, TEV_use, TEV_use_GDP)
 total <- c(1, mean_wtp, TEV_total, TEV_mean_GDP)
 TEV <- rbind(existence, option, use, total)
 colnames(TEV) <- c("proportion", "mean", "sum", "percentageGDP2019")
+
+# perpetual value
+social_discount_rate <- 8.9542/100
+r <- 1/(1+social_discount_rate)
+discounted_values <- TEV_total*r**seq(0,98)
+PV <- sum(discounted_values)
+print(PV)
+
+# export results
+export_report <- tidy(regression_report_locals)
+write.csv(export_report, file = "C:\\Users\\Lui Yu Sen\\Documents\\Github projects\\HE3011_WTP_PPC\\export_regression.csv")
+write.csv(TEV, file = "C:\\Users\\Lui Yu Sen\\Documents\\Github projects\\HE3011_WTP_PPC\\TEV.csv")
