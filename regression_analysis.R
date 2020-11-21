@@ -1,6 +1,7 @@
 library(tidyverse)
 library(SciViews)
 library(broom)
+library(lmtest)
 
 field_data_filepath <- "C:\\Users\\Lui Yu Sen\\Documents\\Github projects\\HE3011_WTP_PPC\\Data\\field_survey_data.csv"
 field_survey <- read.csv(field_data_filepath)
@@ -105,8 +106,8 @@ regression_report <- lm(formula = max_wtp ~ monthlyincome + visitationrate + tra
 summary(regression_report)
 
 regression_report_locals <- lm(formula = max_wtp ~ monthlyincome + visitationrate + traveltime + age,
-                               filter(field_survey, field_survey$nationality == "Singaporean" |
-                                          field_survey$nationality == "Singapore Permanent Resident")
+                               (filter(field_survey, field_survey$nationality == "Singaporean" |
+                                          field_survey$nationality == "Singapore Permanent Resident"))[-1,]
                                )
 summary(regression_report_locals)
 
@@ -119,7 +120,7 @@ summary(hetero_test)
 
 # test for heteroscedascity for local data
 hetero_test2 <- filter(field_survey, field_survey$nationality == "Singaporean" |
-                           field_survey$nationality == "Singapore Permanent Resident")
+                           field_survey$nationality == "Singapore Permanent Resident")[-1,]
 hetero_test2 <- mutate(hetero_test2, residual_squared = regression_report_locals$residuals**2)
 hetero_test2 <- lm(residual_squared ~ monthlyincome + visitationrate + traveltime + age, hetero_test2)
 summary(hetero_test2)
@@ -135,7 +136,7 @@ summary(hetero_test2)
 
 # calculating TEV
 locals_data <- filter(field_survey, field_survey$nationality == "Singaporean" |
-                          field_survey$nationality == "Singapore Permanent Resident")
+                          field_survey$nationality == "Singapore Permanent Resident")[-1,]
 mean_existence <- mean(locals_data[which(locals_data$visitationrate=="existence"),"max_wtp"])
 mean_option <- mean(locals_data[which(locals_data$visitationrate=="option"),"max_wtp"])
 mean_use <- mean(locals_data[which(locals_data$visitationrate=="use"),"max_wtp"])
